@@ -10,13 +10,16 @@
 #define ResultYellow 2
 #define ResultRed 4
 
-typedef char Result;
-struct s_words
+#define MAX_WORDS 5
+#define WORD_LENGTH 6
+
+typedef struct
 {
-    char **arr;
+    char arr[MAX_WORDS][WORD_LENGTH];
     int n;
-};
-typedef struct s_words Words;
+} Words;
+
+typedef char Result;
 
 void Example_print_result(Result *);
 Result cc(char, int, char *);
@@ -72,13 +75,11 @@ bool isin(char c, char *word)
     return ret;
 }
 
-Words readfile(char *filename, int max)
+Words readfile(char *filename)
 {
     char buf[8];
-    int i;
     FILE *fd;
-    char **ret = NULL;
-    Words words = {NULL, 0};
+    Words words = {0};
 
     fd = fopen(filename, "r");
     if (!fd)
@@ -87,47 +88,23 @@ Words readfile(char *filename, int max)
         return words;
     }
 
-    ret = (char **)malloc(max * sizeof(char *));
-
-    if (!ret)
-    {
-        fclose(fd);
-        perror("Error allocating memory");
-        return words;
-    }
-
-    for (i = 0; i < max; i++)
-    {
-        ret[i] = (char *)malloc(6 * sizeof(char));
-    }
-
-    i = 0;
-    while (fgets(buf, 7, fd) && i < max)
+    while (fgets(buf, sizeof(buf), fd) && words.n < MAX_WORDS)
     {
         size_t size = strlen(buf);
         if (size > 0 && buf[size - 1] == '\n')
         {
             buf[size - 1] = '\0';
-            size--;
         }
 
-        if (size == 5)
+        if (size - 1 == 5)
         {
-            ret[i] = strdup(buf);
-            if (!ret[i])
-            {
-                perror("Error allocating memory for word");
-                break;
-            }
-            i++;
+            strncpy(words.arr[words.n], buf, WORD_LENGTH);
+            words.arr[words.n][WORD_LENGTH - 1] = '\0';
+            words.n++;
         }
     }
 
     fclose(fd);
-
-    words.arr = ret;
-    words.n = i;
-
     return words;
 }
 
@@ -138,15 +115,6 @@ void print_words(Words words)
     {
         printf("%s\n", words.arr[i]);
     }
-}
-
-void free_words(Words words)
-{
-    for (int i = 0; i < words.n; i++)
-    {
-        free(words.arr[i]);
-    }
-    free(words.arr);
 }
 
 void Example_print_result(Result *res)
@@ -191,13 +159,9 @@ int main(int argc, char *argv[])
     res = cw(correct, guess);
     Example_print_result(res);
 
-    words = readfile("wordlist.txt", 5);
-    if (!words.arr)
-    {
-        printf("%s\n", "Error");
-    }
+    words = readfile("wordlist.txt");
     print_words(words);
-    free_words(words);
+    printf("%d", words.n);
 
     return 0;
 }
