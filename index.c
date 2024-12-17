@@ -1,4 +1,7 @@
+/*wordle.txt*/
+
 #include <stdio.h>
+#include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
@@ -9,41 +12,22 @@
 
 typedef char Result;
 
-bool isin(char, char *);
-Result cc(char guess, int idx, char *word);
+void Example_print_result(Result *);
+Result cc(char, int, char *);
 Result *cw(char *, char *);
-void Example_print(Result *);
+bool isin(char, char *);
 int main(int, char **);
 
-bool isin(char c, char *word)
-{
-    int size, i;
-    bool in;
-
-    in = false;
-    size = strlen(word);
-
-    for (i = 0; i < size; i++)
-    {
-        if (word[i] == c)
-        {
-            in = true;
-            break;
-        }
-    }
-    return in;
-}
-
-Result cc(char guess, int idx, char *coreect_word)
+Result cc(char guess, int idx, char *correct_word)
 {
     char correct;
-    correct = coreect_word[idx];
+    correct = correct_word[idx];
 
     if (guess == correct)
     {
         return ResultGreen;
     }
-    else if (isin(guess, coreect_word))
+    else if (isin(guess, correct_word))
     {
         return ResultYellow;
     }
@@ -51,7 +35,7 @@ Result cc(char guess, int idx, char *coreect_word)
     return ResultRed;
 }
 
-Result *cw(char *guess, char *correct)
+Result *cw(char *correct, char *guess)
 {
     static Result res[5];
     int i;
@@ -60,11 +44,29 @@ Result *cw(char *guess, char *correct)
     {
         res[i] = cc(guess[i], i, correct);
     }
-
     return res;
 }
 
-void Example_print(Result *res)
+bool isin(char c, char *word)
+{
+    bool ret;
+    int i, size;
+
+    ret = false;
+    size = strlen(word);
+
+    for (i = 0; i < size; i++)
+    {
+        if (word[i] == c)
+        {
+            ret = true;
+            break;
+        }
+    }
+    return ret;
+}
+
+void Example_print_result(Result *res)
 {
     int i;
 
@@ -82,7 +84,7 @@ void Example_print(Result *res)
             printf("%s\n", "Red");
             break;
         default:
-            break;
+            printf("Unknown: %d\n", res[i]);
         }
     }
 }
@@ -95,14 +97,15 @@ int main(int argc, char *argv[])
 
     if (argc < 3)
     {
-        fprintf(stderr, "Error: %s CORRECTWORD GUESSWORD\n", argv[0]);
+        fprintf(stderr, "Usage: %s CORRECTWORD GUESSWORD", argv[0]);
         return -1;
     }
 
     correct = argv[1];
     guess = argv[2];
-    res = cw(guess, correct);
-    Example_print(res);
+
+    res = cw(correct, guess);
+    Example_print_result(res);
 
     return 0;
 }
