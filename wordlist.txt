@@ -160,7 +160,6 @@ plebe
 fatso
 seven
 turki
-up(a)
 mongo
 dizzy
 harms
@@ -672,7 +671,6 @@ dutch
 caber
 comes
 valor
-co-ed
 pasha
 aurae
 woden
@@ -908,7 +906,6 @@ aotus
 covet
 strip
 ionic
-ibid.
 boned
 elfin
 thane
@@ -1312,7 +1309,6 @@ giles
 glume
 brown
 pithy
-in(a)
 barky
 kopje
 sulla
@@ -1907,7 +1903,6 @@ frill
 quill
 lunch
 nixie
-g-man
 ghana
 cubic
 leads
@@ -2161,7 +2156,6 @@ grave
 sorts
 based
 croat
-v-day
 phyle
 kolam
 gloze
@@ -2783,7 +2777,6 @@ bread
 chaja
 grown
 amply
-non-u
 carya
 daube
 opsin
@@ -2804,7 +2797,6 @@ venir
 ethos
 wimpy
 cooly
-yo-yo
 meson
 lucky
 topek
@@ -3058,7 +3050,6 @@ james
 stour
 devil
 belus
-d-day
 lifer
 manet
 qatar
@@ -3168,7 +3159,6 @@ gouda
 turin
 cross
 amman
-on(p)
 catch
 fully
 video
@@ -3416,7 +3406,6 @@ msasa
 keats
 agnus
 crone
-so(p)
 igigi
 fieff
 hitch
@@ -3558,7 +3547,6 @@ rheum
 takin
 daeva
 cards
-in(p)
 punch
 scobs
 loeil
@@ -3962,7 +3950,6 @@ tawny
 leges
 pubes
 tower
-t-bar
 ghaut
 jecur
 aryan
@@ -4148,7 +4135,6 @@ versa
 bhang
 lente
 krait
-ex(a)
 tabid
 newsy
 draba
@@ -4204,7 +4190,6 @@ dalle
 elmos
 surge
 queer
-up(p)
 phase
 spray
 annis
@@ -4234,7 +4219,6 @@ copal
 atajo
 sarda
 osaka
-bvd's
 acute
 gates
 axial
@@ -4285,7 +4269,6 @@ putid
 three
 bowel
 candy
-gr/to
 voulu
 coons
 sacra
@@ -4602,7 +4585,6 @@ salve
 vedas
 pongo
 genip
-hi-fi
 nilly
 media
 malva
@@ -4796,7 +4778,6 @@ thank
 soupe
 mopsy
 lapse
-t-man
 burnt
 sitzt
 snarl
@@ -4858,7 +4839,6 @@ ducat
 faule
 kaput
 imbue
-no(a)
 mimir
 cater
 taper
@@ -4970,7 +4950,6 @@ oxide
 bathe
 muses
 reise
-no-go
 foils
 acres
 pedal

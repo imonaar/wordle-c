@@ -1,62 +1,74 @@
-/*wordle.txt*/
-
+/* wordle.txt */
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <time.h>
+#include <assert.h>
+#include <errno.h>
 
 #define ResultGreen 1
 #define ResultYellow 2
 #define ResultRed 4
 
-#define MAX_WORDS 5
-#define WORD_LENGTH 6
+#define MAX_WORDS 5172
+#define WORD_LENGTH 5
+#define MAX_ATTEMPTS 5
 
-typedef struct
-{
-    char arr[MAX_WORDS][WORD_LENGTH];
-    int n;
-} Words;
+#define ClrGreen "\033[0;32m"
+#define ClrYellow "\033[0;33m"
+#define ClrRed "\033[0;31m"
+#define ClrStop "\033[0m"
 
 typedef char Result;
+typedef struct
+{
+    char arr[MAX_WORDS][WORD_LENGTH + 1]; //+1 for null terminator
+    int count;
+} Words;
 
-void Example_print_result(Result *);
-Result cc(char, int, char *);
-Result *cw(char *, char *);
-bool isin(char, char *);
+bool continuation;
+int rounds;
+bool corrects[WORD_LENGTH];
+bool win;
+
+void print_result(Result *, char *, char *);
+Result evaluate_guess(char, int, const char *);
+Result *check_word(const char *, char *);
+bool isin(char, const char *);
+Words readfile(char *);
+char *get_random_word(Words);
+void prompt(char *);
+char *readline(void);
+void gameloop(char *, Words);
+void display_prompt(char *);
+bool is_valid_word(const char *, Words);
 int main(int, char **);
 
-Result cc(char guess, int idx, char *correct_word)
+Result evaluate_guess(char guess, int index, const char *target_word)
 {
-    char correct;
-    correct = correct_word[idx];
-
-    if (guess == correct)
+    if (guess == target_word[index])
     {
+        corrects[index] = true;
         return ResultGreen;
     }
-    else if (isin(guess, correct_word))
-    {
-        return ResultYellow;
-    }
 
-    return ResultRed;
+    return isin(guess, target_word) ? ResultYellow : ResultRed;
 }
 
-Result *cw(char *correct, char *guess)
+Result *check_word(const char *target_word, char *guess)
 {
-    static Result res[5];
-    int i;
-
-    for (i = 0; i < 5; i++)
+    static Result results[WORD_LENGTH];
+    for (int i = 0; i < WORD_LENGTH; i++)
     {
-        res[i] = cc(guess[i], i, correct);
+        results[i] = evaluate_guess(guess[i], i, target_word);
     }
-    return res;
+    return results;
 }
 
-bool isin(char c, char *word)
+bool isin(char c, const char *word)
 {
     bool ret;
     int i, size;
@@ -77,91 +89,199 @@ bool isin(char c, char *word)
 
 Words readfile(char *filename)
 {
-    char buf[8];
-    FILE *fd;
-    Words words = {0};
+    char buf[WORD_LENGTH + 2]; // +2 for newline and null terminator
+    Words word_list = {0};
+    FILE *fd = fopen(filename, "r");
 
-    fd = fopen(filename, "r");
     if (!fd)
     {
         perror("Error opening file");
-        return words;
+        return word_list;
     }
 
-    while (fgets(buf, sizeof(buf), fd) && words.n < MAX_WORDS)
+    while (fgets(buf, sizeof(buf), fd) && word_list.count < MAX_WORDS)
     {
-        size_t size = strlen(buf);
-        if (size > 0 && buf[size - 1] == '\n')
+        int length = strlen(buf);
+        if (length > 0 && buf[length - 1] == '\n')
         {
-            buf[size - 1] = '\0';
+            buf[length - 1] = '\0';
         }
 
-        if (size - 1 == 5)
+        if (length - 1 == WORD_LENGTH)
         {
-            strncpy(words.arr[words.n], buf, WORD_LENGTH);
-            words.arr[words.n][WORD_LENGTH - 1] = '\0';
-            words.n++;
+            strncpy(word_list.arr[word_list.count], buf, WORD_LENGTH);
+            word_list.arr[word_list.count][length - 1] = '\0';
+            word_list.count++;
         }
     }
 
     fclose(fd);
-    return words;
+    return word_list;
 }
 
-void print_words(Words words)
+char *get_random_word(Words words)
 {
-    int i;
-    for (i = 0; i < words.n; i++)
+    static char res[6];
+
+    if (words.count == 0)
     {
-        printf("%s\n", words.arr[i]);
+        return NULL;
+    }
+
+    int random_index = rand() % words.count;
+    strcpy(res, words.arr[random_index]);
+    return res;
+}
+
+void display_prompt(char *target_word)
+{
+    for (int i = 0; i < WORD_LENGTH; i++)
+    {
+        printf("%c", corrects[i] ? target_word[i] : '-');
+    }
+
+    printf("\n\n%d> ", MAX_ATTEMPTS - rounds);
+    fflush(stdout);
+}
+
+bool is_valid_word(const char *word, Words word_list)
+{
+    for (int i = 0; i < word_list.count; i++)
+    {
+        if (strcmp(word, word_list.arr[i]) == 0)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+char *readline(void)
+{
+    static char buf[8];
+    memset(buf, 0, sizeof(buf)); // Clear the buffer
+
+    if (fgets(buf, sizeof(buf), stdin) == NULL)
+    {
+        return NULL; // Return NULL on failure
+    }
+
+    int size = strlen(buf);
+    if (size > 0 && buf[size - 1] == '\n')
+    {
+        buf[size - 1] = '\0'; // Replace newline with null terminator
+    }
+
+    return buf;
+}
+
+void gameloop(char *target_word, Words word_list)
+{
+    display_prompt(target_word);
+    char *input = readline();
+
+    if (input == NULL)
+    {
+        printf("Error reading input.\n");
+        return;
+    }
+
+    int length = strlen(input);
+
+    if (length != WORD_LENGTH) // Ensure exact length
+    {
+        printf("Input should be exactly %d letters.\n", WORD_LENGTH);
+        return;
+    }
+
+    if (!is_valid_word(input, word_list))
+    {
+        printf("'%s' is not a valid word. Try again.\n", input);
+        rounds++;
+        return;
+    }
+
+    Result *results = check_word(target_word, input);
+
+    int correct_count = 0;
+    for (int i = 0; i < WORD_LENGTH; i++)
+    {
+        if (corrects[i])
+        {
+            correct_count++;
+        }
+    }
+
+    print_result(results, target_word, input);
+
+    if (correct_count == WORD_LENGTH)
+    {
+        win = true;
+        continuation = false;
+        return;
+    }
+
+    rounds++;
+    if (rounds >= MAX_ATTEMPTS)
+    {
+        win = false;
+        continuation = false;
     }
 }
 
-void Example_print_result(Result *res)
+void print_result(Result *res, char *correct, char *guess)
 {
     int i;
 
-    for (i = 0; i < 5; i++)
+    for (i = 0; i < WORD_LENGTH; i++)
     {
         switch (res[i])
         {
         case ResultGreen:
-            printf("%s\n", "Green");
+            printf("%s%c%s", ClrGreen, guess[i], ClrStop);
             break;
         case ResultYellow:
-            printf("%s\n", "Yellow");
+            printf("%s%c%s", ClrYellow, guess[i], ClrStop);
             break;
         case ResultRed:
-            printf("%s\n", "Red");
+            printf("%s%c%s", ClrRed, guess[i], ClrStop);
             break;
         default:
             printf("Unknown: %d\n", res[i]);
         }
     }
+
+    printf("\n");
+    return;
+}
+
+void display_instructions()
+{
+    printf("Welcome to Wordle!\n\n");
+    printf("Your goal is to guess the correct 5-letter word within 5 attempts.\n\n");
+    printf("After each guess:\n");
+    printf("- Letters that are in the correct position will be highlighted in green.\n");
+    printf("- Letters that are in the word but in the wrong position will be highlighted in yellow.\n");
+    printf("- Letters that are not in the word will be highlighted in red.\n\n");
+    printf("Please enter a valid 5-letter word to begin!\n\n");
+    printf("Good luck!\n");
 }
 
 int main(int argc, char *argv[])
 {
-    char *correct;
-    char *guess;
-    Result *res;
-    Words words;
+    srand((unsigned)time(NULL));
+    rounds = 0;
+    Words word_list = readfile("wordlist.txt");
+    assert(word_list.count > 0);
+    char *correct_word = get_random_word(word_list);
+    continuation = true;
 
-    if (argc < 3)
-    {
-        fprintf(stderr, "Usage: %s CORRECTWORD GUESSWORD", argv[0]);
-        return -1;
-    }
+    display_instructions();
 
-    correct = argv[1];
-    guess = argv[2];
+    while (continuation)
+        gameloop(correct_word, word_list);
 
-    res = cw(correct, guess);
-    Example_print_result(res);
-
-    words = readfile("wordlist.txt");
-    print_words(words);
-    printf("%d", words.n);
-
+    printf("The correct word was: '%s'\n", correct_word);
+    printf(win ? "Congratulations, you won the game\n" : "You lost. Game over\n");
     return 0;
 }
